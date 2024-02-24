@@ -1,0 +1,51 @@
+﻿@page "/adminpage/admin-features"
+@attribute [Authorize]
+
+@rendermode InteractiveServer
+@inject IFeatureService FeatureService
+
+<FromAdminPageButton Address="admin-features/create-feature" NameOfButton="Create Feature" />
+
+@if (Features is null)
+{
+    <p><em>Loading Features...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Name</th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var feature in Features)
+            {
+                <tr>
+                    <th scope="row">@feature.Id</th>
+                    <td>@feature.Name</td>
+                    <td><FromAdminPageButton Id="@feature.Id" Address="admin-features/edit-feature" NameOfButton="Edit" /></td>
+                    <td><DeleteButton Id="@feature.Id" Address="admin-features/delete-feature" /></td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private ICollection<Feature> Features = new List<Feature>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Features = await FeatureService.GetFeatures();
+    }
+
+
+}

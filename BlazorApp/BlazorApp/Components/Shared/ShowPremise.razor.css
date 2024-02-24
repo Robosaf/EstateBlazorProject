@@ -1,0 +1,65 @@
+﻿h1 {
+    color: black;
+    font-family: 'Raleway', sans-serif;
+    font-size: 62px;
+    font-weight: 800;
+    line-height: 62px;
+    margin: 20px 0 50px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+h3{
+    color: #007bff;
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+    margin-top: 5px; 
+}
+
+
+.hero {
+    background-color: #f8f9fa;
+    padding: 40px 0;
+}
+
+    .hero h1 {
+        color: #007bff;
+    }
+
+
+.description {
+    color: #17a2b8; /* Info text color for description */
+}
+
+    .description h3 {
+        font-size: 24px; /* Increase h3 font size */
+    }
+
+    .description p {
+        font-size: 18px; /* Increase p font size */
+        line-height: 1.5; /* Set a comfortable line height */
+    }
+
+.additional-details,
+.features {
+    border: 1px solid #28a745; /* Add a green border to additional details and features sections */
+    border-radius: 8px; /* Add rounded corners to the border */
+    padding: 15px; /* Add padding for better spacing */
+    margin-top: 20px; /* Add top margin for separation */
+}
+
+    .additional-details h3,
+    .features h3 {
+        color: #28a745; /* Success color for section headings */
+    }
+
+    .additional-details ul,
+    .features ul {
+        list-style-type: none; /* Remove list bullet points */
+        padding: 0; /* Remove default padding for the list */
+    }
+
+    .additional-details li,
+    .features li {
+        margin-bottom: 8px; /* Add bottom margin for list items */
+    }

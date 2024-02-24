@@ -1,0 +1,237 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+@inject IPremiseService PremiseService
+@inject ILocationService LocationService
+
+<!-- Filter Bar -->
+<div class="container filter-bar">
+    <h3 class="text-center mb-4">Filter Listings</h3>
+    <div class="row">
+        <!-- Title Search-->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" class="form-control" @bind="TitleFilter" placeholder="Enter title">
+            </div>
+        </div>
+        <!-- City Search -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="form-group">
+                <label for="property-type">City:</label>
+                <select class="form-control" @bind="SelectedCity">
+                    <option value="" style="color: gray">--Select City--</option>
+                    @foreach (var option in Locations)
+                    {
+                        <option value="@option.City">@option.City</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <!-- Price Search -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="form-group">
+                <label for="price-range">Price Range:</label>
+                <div class="d-flex">
+                    <input type="number" class="form-control mr-2" id="price-from" placeholder="from" @bind="MinPrice">
+                    <input type="number" class="form-control" id="price-to" placeholder="to" @bind="MaxPrice">
+                </div>
+            </div>
+        </div>
+        <!-- Size Search -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="form-group">
+                <label for="price-range">Size:</label>
+                <div class="d-flex">
+                    <input type="number" class="form-control mr-2" id="price-from" placeholder="min" @bind="MinSize">
+                    <input type="number" class="form-control" id="price-to" placeholder="max" @bind="MaxSize">
+                </div>
+            </div>
+        </div>
+        <!-- Rooms Search -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="form-group">
+                <label for="price-range">Rooms:</label>
+                <div class="d-flex">
+                    <input type="number" class="form-control mr-2" id="price-from" placeholder="min" @bind="MinCountRooms">
+                    <input type="number" class="form-control" id="price-to" placeholder="max" @bind="MaxCountRooms">
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Buttons -->
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-3 mb-4">
+            <button type="button" class="btn btn-primary btn-block" @onclick="UpdateFilteredPremises">Apply Filters</button>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-4">
+            <button type="button" class="btn btn-secondary btn-block" @onclick="ClearFilters">Clear Filters</button>
+        </div>
+    </div>
+</div>
+
+@if (Premises is null)
+{
+    <p><em>Loading Premises...</em></p>
+}
+else
+{
+    @foreach (var premise in FilteredPremises)
+    {
+        <div class="container premise-container">
+            <!-- Title Section -->
+            <h1 class="premise-title"><a href="/premise/@premise.Id">@premise.Title</a></h1>
+
+            <div class="d-flex flex-wrap">
+                <div class="image-section">
+                    <!-- Image Section -->
+                    <MudCarousel SelectedIndex="1" Class="text-center w-100" Style="height: 400px" ItemsSource="@GetListOfImgNames(premise.ImgPath)" ShowBullets="false" AutoCycle="false">
+                        <ItemTemplate>
+                            <MudImage src="@GetNormalizedUrlForImg(@context)" Height="400" Width="314"></MudImage>
+                        </ItemTemplate>
+                    </MudCarousel>
+                </div>
+
+                <!-- Description Section -->
+                <div class="p-4 description-section">
+                    <h3>Description</h3>
+                    <p>@premise.Description</p>
+                    <div class="w-50">
+                        <h3>Additional Details</h3>
+                        <ul>
+                            <li><strong>Location:</strong> @premise.Location.City, @premise.Location.Country</li>
+                            <li><strong>Street:</strong> @premise.Street</li>
+                            <li><strong>Size:</strong> @premise.Size sq. ft</li>
+                            <li><strong>Rooms count:</strong> @premise.RoomsCount rooms</li>
+                            <li><strong>Price:</strong> @premise.Price</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private string TitleFilter = "";
+    private string SelectedCity = "";
+    private int? MinPrice = null;
+    private int? MaxPrice = null;
+    private int? MinSize = null;
+    private int? MaxSize = null;
+    private int? MinCountRooms = null;
+    private int? MaxCountRooms = null;
+
+    List<Premise> FilteredPremises = new List<Premise>();
+    ICollection<Premise> Premises = new List<Premise>();
+    ICollection<Location> Locations = new List<Location>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Premises = await PremiseService.GetPremises();
+        Locations = await LocationService.GetLocations();
+        FilteredPremises = Premises.ToList();
+    }
+
+    private List<string> GetListOfImgNames(string premiseImgPath)
+    {
+        List<string> result = new();
+
+        try
+        {
+            foreach (var file in Directory.GetFiles(premiseImgPath).ToList())
+            {
+                result.Add(GetNormalizedUrlForImg(file));
+            }
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+        }
+
+
+
+        return result;
+    }
+
+    private string GetNormalizedUrlForImg(string url)
+    {
+        return url
+            .Replace("D:\\MY PROJECTS\\BlazorApp\\BlazorApp\\BlazorApp\\wwwroot\\", "./")
+            .Replace("\\", "/");
+    }
+
+    private void UpdateFilteredPremises()
+    {
+        var premises = Premises;
+        // Title Filter
+        if (TitleFilter != string.Empty)
+        {
+            premises = premises
+            .Where(p => p.Title.Contains(TitleFilter, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        } 
+        // Cities Filter
+        if (SelectedCity != string.Empty)
+        {
+            premises = premises
+            .Where(p => p.Location.City.Equals(SelectedCity))
+            .ToList();
+        }
+        // Prices Filter
+        if (MinPrice != null)
+        {
+            premises = premises
+            .Where(p => p.Price >= MinPrice)
+            .ToList();
+        }
+        if (MaxPrice != null)
+        {
+            premises = premises
+            .Where(p => p.Price <= MaxPrice)
+            .ToList();
+        }
+        // Size Filter
+        if (MinSize != null)
+        {
+            premises = premises
+            .Where(p => p.Size >= MinSize)
+            .ToList();
+        }
+        if (MaxSize != null)
+        {
+            premises = premises
+            .Where(p => p.Size <= MaxSize)
+            .ToList();
+        }
+        // Count Of Rooms Filter
+        if (MinCountRooms != null)
+        {
+            premises = premises
+            .Where(p => p.RoomsCount >= MinCountRooms)
+            .ToList();
+        }
+        if (MaxCountRooms != null)
+        {
+            premises = premises
+            .Where(p => p.RoomsCount <= MaxCountRooms)
+            .ToList();
+        }
+
+
+
+        FilteredPremises = premises.ToList();
+    }
+
+    private void ClearFilters()
+    {
+        FilteredPremises = Premises.ToList();
+        TitleFilter = "";
+        SelectedCity = "";
+        MinPrice = null;
+        MaxPrice = null;
+        MinCountRooms = null;
+        MaxCountRooms = null;
+    }
+
+}

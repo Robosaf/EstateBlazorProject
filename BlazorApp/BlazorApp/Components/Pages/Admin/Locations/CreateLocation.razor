@@ -1,0 +1,45 @@
+﻿@page "/adminpage/admin-locations/create-location/"
+@inject ILocationService LocationService
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<h3>Create Location</h3>
+
+<EditForm Model="_locationToAdd" OnSubmit="@HandleSubmit" re="CurrentEditContext">
+
+    <div class="form-group pb-4">
+        <label for="@_locationToAdd.City">City</label>
+        <InputText class="form-control" @bind-Value="_locationToAdd.City" />
+    </div>
+
+    <div class="form-group pb-4">
+        <label for="@_locationToAdd.Country">Country</label>
+        <InputText class="form-control" @bind-Value="_locationToAdd.Country" />
+    </div>
+
+
+    <button type="submit" class="btn btn-primary">Create</button>
+</EditForm>
+
+@if(exist)
+{
+    <div class="alert alert-danger mt-4" role="alert">Error: This Location Exists</div>
+}
+
+@code {
+    Location _locationToAdd = new Location();
+    bool exist = false;
+    async void HandleSubmit()
+    {
+        exist = false;
+        if (!LocationService.LocationExists(_locationToAdd.City, _locationToAdd.Country))
+        {
+            await LocationService.CreateLocation(_locationToAdd);
+            navManager.NavigateTo("/adminpage/admin-locations/");
+        }
+        else
+        {
+            exist = true;
+        }
+    }
+}

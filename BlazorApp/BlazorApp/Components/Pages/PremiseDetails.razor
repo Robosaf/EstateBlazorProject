@@ -1,0 +1,12 @@
+﻿@page "/premise/{premiseId:int}"
+
+<div style="background-color: #808080;">
+    <ShowPremise Id="premiseId" />
+</div>
+
+
+@code {
+
+    [Parameter]
+    public int premiseId { get; set; }
+}

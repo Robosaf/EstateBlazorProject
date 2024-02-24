@@ -1,0 +1,22 @@
+﻿@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>Home</PageTitle>
+
+<section class="hero">
+    <div class="hero-container">
+        <div class="column-left">
+            <h1>Apartmens, houses and what do you want</h1>
+            <button type="submit" @onclick="ToPremises">See premises</button>
+        </div>
+        <div class="column-right">
+            <img src="/css-images/logo.png" alt="illustration" class="hero-image" />
+        </div>
+    </div>
+</section>
+
+@code{
+    private void ToPremises(){
+        navManager.NavigateTo("/premises");
+    }
+}

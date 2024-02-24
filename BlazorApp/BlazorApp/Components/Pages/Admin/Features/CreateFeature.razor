@@ -1,0 +1,39 @@
+﻿@page "/adminpage/admin-features/create-feature/"
+@inject IFeatureService FeatureService
+@attribute [Authorize]
+
+@rendermode InteractiveServer
+<h3>Create Feature</h3>
+
+<EditForm Model="_featureToAdd" OnSubmit="@HandleSubmit">
+
+    <div class="form-group pb-4">
+        <label for="@_featureToAdd.Name">Name</label>
+        <InputText class="form-control" @bind-Value="_featureToAdd.Name" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create</button>
+</EditForm>
+
+@if (exist)
+{
+    <div class="alert alert-danger mt-4" role="alert">Error: This Feature Exists</div>
+}
+
+@code {
+    Feature _featureToAdd = new Feature();
+    bool exist = false;
+    async void HandleSubmit()
+    {
+        exist = false;
+        if (!FeatureService.FeatureExists(_featureToAdd.Name))
+        {
+            await FeatureService.CreateFeature(_featureToAdd);
+            navManager.NavigateTo("/adminpage/admin-features/");
+        }
+        else
+        {
+            exist = true;
+        }
+    }
+}

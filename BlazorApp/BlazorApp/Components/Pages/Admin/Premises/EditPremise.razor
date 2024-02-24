@@ -1,0 +1,283 @@
+﻿@page "/adminpage/admin-premises/edit-premise/{Id:int}"
+@inject IHostEnvironment _hostEnvironment
+@inject IPremiseFeatureService PremiseFeatureService
+@inject IFeatureService FeatureService
+@inject IPremiseService PremiseService
+@inject ILocationService LocationService
+@attribute [Authorize]
+
+
+@rendermode InteractiveServer
+
+<h3>Edit Premise</h3>
+
+<EditForm Model="_premiseToEdit" OnSubmit="@HandleSubmit">
+    <div class="p-2">
+        <label>Title:</label>
+        <InputText @bind-Value="NewTitle" />
+    </div>
+    <div class="p-2">
+        <div class="text-center mt-4">
+            @foreach (string name in fileNames)
+            {
+                <img src="@GetNormilazedUrlForImg(name)" alt="@_premiseToEdit.Title" class="img-fluid rounded img-size">
+            }
+        </div>
+    </div>
+    <div class="p-2">
+        <label>Change photoes:</label>
+        <InputFile OnChange="@LoadFiles" accept=".jpg, .jpeg, .png" multiple />
+    </div>
+    <div class="p-2">
+        @if (errors.Count > 0)
+        {
+            <ul class="text-danger">
+                @foreach (string error in errors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        }
+    </div>
+    <div class="p-2">
+        <label for="_premise.Description">Description:</label>
+        <InputTextArea @bind-Value="_premiseToEdit.Description" />
+    </div>
+    <div class="p-2">
+        <label>Street:</label>
+        <InputText @bind-Value="_premiseToEdit.Street" />
+    </div>
+    <div class="p-2">
+        <InputSelect @bind-Value="_premiseToEdit.LocationId">
+            @foreach (var location in Locations)
+            {
+                <option value="@location.Id">@location.City, @location.Country</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="p-2">
+        @foreach (var feature in _featureBools)
+        {
+            <InputCheckbox @bind-Value="@feature.IsChecked" />
+            <label>@feature.FeatureName</label>
+            <br />
+        }
+    </div>
+    <div class="p-2">
+        <label>Price:</label>
+        <InputNumber @bind-Value="_premiseToEdit.Price" />
+    </div>
+
+    <div class="p-2">
+        <label>Size:</label>
+        <InputNumber @bind-Value="_premiseToEdit.Size" />
+    </div>
+    <div class="p-2">
+        <label>Count of rooms:</label>
+        <InputNumber @bind-Value="_premiseToEdit.RoomsCount" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update Premise</button>
+</EditForm>
+
+
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    Premise _premiseToEdit { get; set; } = new Premise();
+
+    public string NewTitle = "";
+    List<FeatureBool> _featureBools = new();
+
+    bool isClicked = false;
+    List<IBrowserFile> images = new List<IBrowserFile>();
+    List<string> errors = new List<string>();
+    List<string> fileNames = new();
+    ICollection<Location> Locations = new List<Location>();
+    string backUpTitle = "";
+    int i;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _premiseToEdit = await PremiseService.GetPremiseById(Id);
+        NewTitle = _premiseToEdit.Title;
+        backUpTitle = _premiseToEdit.Title;
+        Locations = await LocationService.GetLocations();
+
+        var features = await FeatureService.GetFeatures();
+        var ids = await PremiseFeatureService.GetFeaturesIdByPremiseId(Id);
+
+        foreach (var feature in features)
+        {
+            _featureBools.Add(new FeatureBool
+                {
+                    FeatureName = feature.Name,
+                    IsChecked = ids.Contains(feature.Id)
+                });
+        }
+
+        fileNames.AddRange(
+            Directory
+            .GetFiles(_premiseToEdit.ImgPath)
+            .ToList()
+        );
+    }
+
+    public void LoadFiles(InputFileChangeEventArgs e)
+    {
+        images.Clear();
+        errors.Clear();
+        isClicked = true;
+        int maxFileCount = 20;
+
+        
+        if (e.FileCount > maxFileCount)
+        {
+            errors.Add($"Error: Attempting to load {e.FileCount} files, but only {maxFileCount} are allowed");
+            return;
+        }
+
+        foreach (var img in e.GetMultipleFiles(maxFileCount))
+        {
+            images.Add(img);
+        }
+    }
+    private void DeleteFilesFromFolder()
+    {
+        System.IO.DirectoryInfo di = new DirectoryInfo(_premiseToEdit.ImgPath);
+
+        foreach (FileInfo file in di.GetFiles())
+        {
+            file.Delete();
+        }
+        foreach (DirectoryInfo dir in di.GetDirectories())
+        {
+            dir.Delete(true);
+        }
+    }
+    private string RenameDirectoryAndReturnTitleOfFolder()
+    {
+        DirectoryInfo di = new DirectoryInfo(_premiseToEdit.ImgPath);
+        if (di == null)
+        {
+            throw new ArgumentNullException("di", "Directory info to rename cannot be null");
+        }
+
+        string titleOfFolder = NormalizeTitleForPath(NewTitle);
+
+        di.MoveTo(Path.Combine(di.Parent.FullName, titleOfFolder));
+
+        return titleOfFolder;
+    }
+    private async Task<string> CaptureFile()
+    {
+        if (isClicked)
+        {
+            DeleteFilesFromFolder();
+        }
+
+        i = 0;
+        string titleOfFolder;
+        long maxFileSize = 1024 * 1024 * 3; // 3MB
+        if (!NewTitle.Equals(_premiseToEdit.Title, StringComparison.OrdinalIgnoreCase))
+        {
+            titleOfFolder = RenameDirectoryAndReturnTitleOfFolder();
+        }
+        else
+        {
+            titleOfFolder = NormalizeTitleForPath(_premiseToEdit.Title);
+        }
+
+        string directoryPath = Path.Combine(
+            _hostEnvironment.ContentRootPath,
+            "wwwroot",
+            "images",
+            titleOfFolder);
+
+        foreach (var img in images)
+        {
+            i++;
+
+            string newFileName = Path.ChangeExtension(
+                $"{i}" + Path.GetRandomFileName(),
+                Path.GetExtension(img.Name));
+
+            string pathToNewFileName = Path.Combine(
+                directoryPath,
+                newFileName);
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            await using FileStream fs = new(pathToNewFileName, FileMode.Create);
+            await img.OpenReadStream(maxFileSize).CopyToAsync(fs);
+
+        }
+
+        return directoryPath;
+    }
+    private string NormalizeTitleForPath(string title)
+    {
+        string normalizedTitle = title.ToLower();
+        string invalid =
+            new string(Path.GetInvalidFileNameChars()) +
+            new string(Path.GetInvalidPathChars()) +
+            new string(" ");
+
+        foreach (char c in invalid)
+        {
+            normalizedTitle = normalizedTitle.Replace(c.ToString(), "");
+        }
+
+        return normalizedTitle;
+    }
+    private async void HandleSubmit()
+    {
+        
+        try
+        {
+            _premiseToEdit.ImgPath = await CaptureFile();
+            isClicked = false;
+            _premiseToEdit.Title = NewTitle;
+            await PremiseService.UpdatePremise(_featureBools, _premiseToEdit);
+            navManager.NavigateTo("/adminpage/admin-premises");
+        }
+        catch (System.InvalidOperationException ex)
+        {
+            //Rename Folder
+            if (!backUpTitle.Equals(_premiseToEdit.Title, StringComparison.OrdinalIgnoreCase))
+            {
+                DirectoryInfo di = new DirectoryInfo(_premiseToEdit.ImgPath);
+                if (di == null)
+                {
+                    throw new ArgumentNullException("di", "Directory info to rename cannot be null");
+                }
+
+                string titleOfFolder = NormalizeTitleForPath(backUpTitle);
+
+                di.MoveTo(Path.Combine(di.Parent.FullName, titleOfFolder));
+            }
+
+
+            navManager.NavigateTo($"/adminpage/error/{ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            errors.Add($"Error: {ex.Message}");
+        }
+        
+    }
+    private string GetNormilazedUrlForImg(string url)
+    {
+        return url
+            .Replace("D:\\MY PROJECTS\\BlazorApp\\BlazorApp\\BlazorApp\\wwwroot\\", "./")
+            .Replace("\\", "/");
+    }
+}

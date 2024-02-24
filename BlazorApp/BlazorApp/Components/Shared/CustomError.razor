@@ -1,0 +1,16 @@
+﻿@page "/adminpage/error/{error}"
+@rendermode InteractiveServer
+<h2>
+    You have unhandled error. <br />
+    @error
+</h2>
+
+
+<h3>Go to admin pages and refresh it.</h3>
+<FromAdminPageButton Address="admin-premises" NameOfButton="Go to admin pages"></FromAdminPageButton>
+
+
+@code {
+    [Parameter]
+    public string error { get; set; } = "";
+}

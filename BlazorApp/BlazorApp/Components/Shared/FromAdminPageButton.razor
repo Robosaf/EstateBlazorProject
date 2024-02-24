@@ -1,0 +1,15 @@
+﻿<button class="btn btn-primary" @onclick="GoToCreate">@NameOfButton</button>
+
+@code {
+    [Parameter]
+    public string NameOfButton { get; set; }
+    [Parameter]
+    public string Address { get; set; }
+    [Parameter]
+    public int? Id { get; set; } = null;
+
+    void GoToCreate()
+    {
+        navManager.NavigateTo($"/adminpage/{Address}/{Id}");
+    }
+}

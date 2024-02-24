@@ -1,0 +1,124 @@
+﻿@inject IPremiseService PremiseService
+@inject IFeatureService FeatureService
+@rendermode InteractiveServer
+
+
+
+@* @if (!noImages)
+{
+    <MudCarousel SelectedIndex="1" Class="text-center w-100" Style="height:400px" ItemsSource="fileNames" ShowBullets="false" AutoCycle="false">
+        <ItemTemplate>
+            <MudImage Src="@GetNormalizedUrlForImg(@context)" Height="400"></MudImage>
+        </ItemTemplate>
+    </MudCarousel>
+}
+else
+{
+    <div>No Images</div>
+} *@
+
+@if(premise == null){
+    <p>Loading....</p>
+}
+else
+{
+    <section class="hero">
+        <div class="container">
+            <!-- Title Section -->
+            <h1 class="display-4">@premise.Title</h1>
+
+            <div>
+                @if (!noImages)
+            {
+            <MudCarousel SelectedIndex="1" Class="text-center w-100" Style="height:400px" ItemsSource="fileNames" ShowBullets="false" AutoCycle="false">
+            <ItemTemplate>
+            <MudImage Src="@GetNormalizedUrlForImg(@context)" Height="400"></MudImage>
+            </ItemTemplate>
+            </MudCarousel>
+            }
+            else
+            {
+            <div>No Images</div>
+            }
+            </div>
+
+            <!-- Description Section -->
+            <div class="mt-4 description">
+                <h3>Description</h3>
+                <p>@premise.Description</p>
+            </div>
+
+            <!-- Additional Details Section -->
+            <div class="row mt-4 additional-details">
+                <div class="col-md-6">
+                    <h3>Additional Details</h3>
+                    <ul>
+                        <li><strong>Location:</strong> @location.City, @location.Country</li>
+                        <li><strong>Street:</strong> @premise.Street</li>
+                        <li><strong>Size:</strong> @premise.Size sq. ft</li>
+                        <li><strong>Rooms count:</strong> @premise.RoomsCount rooms</li>
+                        <li><strong>Price:</strong> @premise.Price</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h3>Features</h3>
+                    <ul>
+                        @foreach (var feature in features)
+                        {
+                            <li>@feature</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+
+
+
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+    public bool noImages { get; set; }
+    public Premise? premise { get; set; } = new();
+    public Location? location { get; set; } = new();
+    public List<string> features = new List<string>();
+    List<string> fileNames = new();
+    protected override async Task OnParametersSetAsync()
+    {
+        premise = await PremiseService.GetPremiseById(Id);
+
+        location = premise.Location;
+
+        try
+        {
+            foreach (var file in Directory.GetFiles(premise.ImgPath).ToList())
+            {
+                fileNames.Add(GetNormalizedUrlForImg(file));
+            }
+        }
+        catch (DirectoryNotFoundException)
+        {
+            noImages = true;
+        }
+
+
+    foreach(var feature in premise.PremiseFeatures)
+        {
+            var toAdd = await FeatureService.GetFeatureById(feature.FeatureId);
+            features.Add(toAdd.Name);
+        }
+
+    }
+
+    private string GetNormalizedUrlForImg(string url)
+    {
+        return url
+            .Replace("D:\\MY PROJECTS\\BlazorApp\\BlazorApp\\BlazorApp\\wwwroot\\", "./")
+            .Replace("\\", "/");
+    }
+
+
+}

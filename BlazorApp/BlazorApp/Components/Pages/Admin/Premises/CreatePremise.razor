@@ -1,0 +1,199 @@
+﻿@page "/adminpage/admin-premises/create-premise"
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+@inject ILocationService LocationService
+@inject IFeatureService FeatureService
+@inject IPremiseService PremiseService
+@inject IHostEnvironment _hostEnvironment
+@attribute [Authorize]
+<h3>Create Premise</h3>
+
+<EditForm Model="_premiseAdd" OnSubmit="@HandleSubmit">
+
+    <div class="p-2">
+        <label>Title:</label>
+        <InputText class="form-control w-25" @bind-Value="_premiseAdd.Title" />
+    </div>
+    <div class="p-2">
+        <label>Select photoes:</label>
+        <InputFile class="form-control w-25" OnChange="@LoadFiles" accept=".jpg, .jpeg, .png" multiple />
+    </div>
+    <div class="p-2">
+        @if (errors.Count > 0)
+        {
+            <ul class="text-danger">
+                @foreach (string error in errors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        }
+    </div>
+    <div class="p-2">
+        <label>Description:</label>
+        <InputTextArea class="form-control w-50" rows="4" @bind-Value="_premiseAdd.Description" />
+    </div>
+    <div class="p-2">
+        <label>Street:</label>
+        <InputText class="form-control w-25" @bind-Value="_premiseAdd.Street" />
+    </div>
+    <div class="p-2">
+        <InputSelect class="form-select form-select-lg w-25 mb-3" @bind-Value="_premiseAdd.LocationId">
+            @foreach (var location in Locations)
+            {
+                <option value="@location.Id">@location.City, @location.Country</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="p-2">
+        <h3>Choose features:</h3>
+        @foreach (var feature in _featureBools)
+        {
+            <InputCheckbox class="custom-control-input" @bind-Value="@feature.IsChecked" />
+            <label class="custom-control-label">@feature.FeatureName</label>
+            <br />
+        }
+    </div>
+    <div class="p-2">
+        <label>Price:</label>
+        <InputNumber class="form-control w-25" @bind-Value="_premiseAdd.Price" />
+    </div>
+    
+    <div class="p-2">
+        <label>Size:</label>
+        <InputNumber class="form-control w-25" @bind-Value="_premiseAdd.Size" />
+    </div>
+
+    <div class="p-2">
+        <label>Count of rooms:</label>
+        <InputNumber class="form-control w-25" @bind-Value="_premiseAdd.RoomsCount" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Premise</button>
+
+</EditForm>
+
+
+
+@code {
+    // public EditContext CurrentEditContext { get; set; }
+    List<FeatureBool> _featureBools = new List<FeatureBool>();
+    ICollection<Feature> Features = new List<Feature>();
+    ICollection<Location> Locations = new List<Location>();
+    List<IBrowserFile> images = new List<IBrowserFile>();
+    public List<string> errors = new List<string>();
+    int i = 0;
+
+
+    [SupplyParameterFromForm]
+    Premise _premiseAdd { get; set; } = new Premise()
+    {
+        LocationId = 1
+    };
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        Locations = await LocationService.GetLocations();
+        Features = await FeatureService.GetFeatures();
+        SeedFeatureBools();
+    }
+
+    private void SeedFeatureBools()
+    {
+        foreach (var item in Features)
+        {
+            _featureBools.Add(new FeatureBool { IsChecked = false, FeatureName = item.Name });
+        }
+    }
+
+    private void LoadFiles(InputFileChangeEventArgs e)
+    {
+        images.Clear();
+        errors.Clear();
+        int maxFileCount = 20;
+
+
+        if (e.FileCount > maxFileCount)
+        {
+            errors.Add($"Error: Attempting to load {e.FileCount} files, but only {maxFileCount} are allowed");
+            return;
+        }
+
+        foreach (var img in e.GetMultipleFiles(maxFileCount))
+        {
+            images.Add(img);
+        }
+    }
+
+    private async Task<string> CaptureFile()
+    {
+        i = 0;
+        long maxFileSize = 1024 * 1024 * 3; // 3MB
+
+        string titleOfFolder = _premiseAdd.Title.ToLower();
+        string invalid =
+            new string(Path.GetInvalidFileNameChars()) +
+            new string(Path.GetInvalidPathChars()) +
+            new string(" ");
+
+        foreach (char c in invalid)
+        {
+            titleOfFolder = titleOfFolder.Replace(c.ToString(), "");
+        }
+
+        string directoryPath = Path.Combine(
+            _hostEnvironment.ContentRootPath,
+            "wwwroot",
+            "images",
+            titleOfFolder);
+
+        foreach (var img in images)
+        {
+            i++;
+
+            string newFileName = Path.ChangeExtension(
+                $"{i}" + Path.GetRandomFileName(),
+                Path.GetExtension(img.Name));
+
+            string pathToNewFileName = Path.Combine(
+                directoryPath,
+                newFileName);
+
+
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            await using FileStream fs = new(pathToNewFileName, FileMode.Create);
+            await img.OpenReadStream(maxFileSize).CopyToAsync(fs);
+
+        }
+
+        return directoryPath;
+    }
+
+    private async void HandleSubmit()
+    {
+        try
+        {
+            _premiseAdd.ImgPath = await CaptureFile();
+            await PremiseService.CreatePremise(_featureBools, _premiseAdd);
+            navManager.NavigateTo("/adminpage/admin-premises/");
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+        {
+            navManager.NavigateTo("/adminpage/admin-premises/");
+        }
+        catch (Exception ex)
+        {
+            errors.Add($"Error: {ex.Message}");
+        }
+    }
+
+
+}
+
+

@@ -1,0 +1,14 @@
+﻿<div>
+
+</div>
+
+
+@code {
+
+	protected override async Task OnInitializedAsync()
+	{
+		var returnUrl = navManager.ToBaseRelativePath(navManager.Uri);
+
+		navManager.NavigateTo($"Login?returnUrl={returnUrl}", true);
+	}
+}

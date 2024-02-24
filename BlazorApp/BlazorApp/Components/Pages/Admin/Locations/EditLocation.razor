@@ -1,0 +1,74 @@
+﻿@page "/adminpage/admin-locations/edit-location/{Id:int}"
+@inject ILocationService LocationService
+@attribute [Authorize]
+
+@rendermode InteractiveServer
+
+<h3>Edit Location</h3>
+
+<EditForm Model="_locationToEdit" OnSubmit="@HandleSubmit" ref="CurrentEditContext">
+
+    <div class="form-group pb-4">
+        <label for="@_locationToEdit.City">City</label>
+        <InputText class="form-control" @bind-Value="_locationToEdit.City" />
+    </div>
+
+    <div class="form-group pb-4">
+        <label for="@_locationToEdit.Country">Country</label>
+        <InputText class="form-control" @bind-Value="_locationToEdit.Country" />
+    </div>
+
+
+    <button type="submit" class="btn btn-primary">Update</button>
+
+</EditForm>
+
+
+@if (exist)
+{
+    <div class="alert alert-danger mt-4" role="alert">Error: This Location Exists</div>
+}
+
+@if (exception)
+{
+    <div class="alert alert-danger mt-4" role="alert">Error: Refresh the page and try one more time again</div>
+}
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    Location _locationToEdit { get; set; } = new Location();
+
+    bool exception = false;
+    bool exist = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _locationToEdit = await LocationService.GetLocationById(Id);
+    }
+
+    private async void HandleSubmit()
+    {
+        exception = false;
+        exist = false;
+        if (!LocationService.LocationExists(_locationToEdit.City, _locationToEdit.Country))
+        {
+            try
+            {
+                await LocationService.UpdateLocation(_locationToEdit);
+                navManager.NavigateTo("/adminpage/admin-locations/");
+            }
+            catch (Exception)
+            {
+                exception = true;
+            }
+        }
+        else
+        {
+            exist = true;
+        }
+    }
+}

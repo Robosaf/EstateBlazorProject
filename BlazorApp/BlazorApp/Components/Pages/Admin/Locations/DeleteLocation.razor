@@ -1,0 +1,51 @@
+﻿@page "/adminpage/admin-locations/delete-location/{Id:int}"
+@inject ILocationService LocationService
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+<h1 class="text-danger">Would you like to DELETE this Location?</h1>
+
+<div class="border border-primary rounded p-3 mb-2">
+    <div class="form-group">
+        <label>ID:</label>
+        <input type="text" class="form-control" value="@_locationToDelete.Id" disabled />
+    </div>
+    <div class="form-group">
+        <label>City:</label>
+        <input type="text" class="form-control" value="@_locationToDelete.City" disabled />
+    </div>
+    <div class="form-group">
+        <label>Name:</label>
+        <input type="text" class="form-control" value="@_locationToDelete.Country" disabled />
+    </div>
+</div>
+
+@if (!anyPremiseHas)
+{
+    <button type="button" class="btn btn-danger" @onclick="Delete">Delete Location</button>
+}
+else
+{
+    <div class="alert alert-warning mt-4" role="alert">Warning: Premises Has This Location</div>
+    <FromAdminPageButton Address="admin-locations" NameOfButton="Go Back" />
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    bool anyPremiseHas = false;
+
+    public Location _locationToDelete = new Location();
+
+    protected override async Task OnInitializedAsync()
+    {
+        anyPremiseHas = await LocationService.AnyPremiseHas(Id);
+        _locationToDelete = await LocationService.GetLocationById(Id);
+    }
+
+    async void Delete()
+    {
+        await LocationService.DeleteLocation(_locationToDelete);
+        navManager.NavigateTo("/adminpage/admin-locations/");
+    }
+}

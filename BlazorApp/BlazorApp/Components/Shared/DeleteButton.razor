@@ -1,0 +1,15 @@
+﻿@rendermode InteractiveServer
+
+<button class="btn btn-danger" @onclick="Delete">Delete</button>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    [Parameter]
+    public string Address { get; set; }
+
+    void Delete()
+    {
+        navManager.NavigateTo($"/adminpage/{Address}/{Id}");
+    }
+}

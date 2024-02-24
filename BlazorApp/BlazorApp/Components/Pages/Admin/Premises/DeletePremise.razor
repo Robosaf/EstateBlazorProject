@@ -1,0 +1,43 @@
+﻿@page "/adminpage/admin-premises/delete-premise/{premiseId:int}"
+@inject IPremiseService PremiseService
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+@attribute [Authorize]
+<h1 class="text-danger fw-bold">Would you like to DELETE this premise?</h1>
+<button type="button" class="btn btn-danger" @onclick="@Delete">DELETE PREMISE</button>
+
+<div class="premise">
+    <ShowPremise Id="premiseId" />
+</div>
+
+@code {
+    [Parameter]
+    public int premiseId { get; set; }
+
+    private async void Delete()
+    {
+        var premise = await PremiseService.GetPremiseById(premiseId);
+        DeleteDirectory(premise.ImgPath);
+        await PremiseService.DeletePremise(premiseId);
+        navManager.NavigateTo("/adminpage/admin-premises");
+    }
+
+    private void DeleteDirectory(string path)
+    {
+        System.IO.DirectoryInfo di = new DirectoryInfo(path);
+        try
+        {
+            foreach (FileInfo file in di.GetFiles())
+            {
+                file.Delete();
+            }
+            foreach (DirectoryInfo dir in di.GetDirectories())
+            {
+                dir.Delete(true);
+            }
+
+            Directory.Delete(path);
+
+        }
+        catch (DirectoryNotFoundException){ }
+    }
+}

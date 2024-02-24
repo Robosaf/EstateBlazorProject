@@ -1,0 +1,56 @@
+﻿@page "/adminpage/admin-premises"
+@rendermode InteractiveServer
+@inject IPremiseService PremiseService
+@attribute [Authorize]
+<FromAdminPageButton Address="admin-premises/create-premise" NameOfButton="Create Premise"/>
+
+@if (Premises is null)
+{
+    <p><em>Loading Premises...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Title</th>
+                <th scope="col">Street</th>
+                <th scope="col">Price</th>
+                <th scope="col">Rooms count</th>
+                <th scope="col">Size</th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var premise in Premises)
+            {
+                <tr>
+                    <th scope="row">@premise.Title</th>
+                    <td>@premise.Street</td>
+                    <td>@premise.Price</td>
+                    <td>@premise.RoomsCount</td>
+                    <td>@premise.Size</td>
+                    <td><FromAdminPageButton Id="@premise.Id" Address="admin-premises/edit-premise" NameOfButton="Edit" /></td>
+                    <td><DeleteButton Id="@premise.Id" Address="admin-premises/delete-premise" /></td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private IQueryable<Premise> Premises;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var pr = await PremiseService.GetPremises();
+        Premises = pr.AsQueryable();
+    }
+
+
+}

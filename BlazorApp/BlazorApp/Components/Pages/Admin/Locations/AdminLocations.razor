@@ -1,0 +1,50 @@
+﻿@page "/adminpage/admin-locations"
+@inject ILocationService LocationService
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<FromAdminPageButton Address="admin-locations/create-location" NameOfButton="Create Location" />
+
+@if (Locations is null)
+{
+    <p><em>Loading Locations...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">City</th>
+                <th scope="col">Country</th>
+                <th scope="col"></th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var location in Locations)
+            {
+                <tr>
+                    <th scope="row">@location.Id</th>
+                    <td>@location.City</td>
+                    <td>@location.Country</td>
+
+                    <td><FromAdminPageButton Address="admin-locations/edit-location" Id="@location.Id" NameOfButton="Edit"/></td>
+                    <td><DeleteButton Address="admin-locations/delete-location" Id="@location.Id" /></td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+}
+
+
+@code {
+    public ICollection<Location> Locations { get; set; } = new List<Location>();
+
+    protected async override Task OnInitializedAsync()
+    {
+        Locations = await LocationService.GetLocations();
+    }
+
+}

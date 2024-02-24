@@ -1,0 +1,68 @@
+﻿@page "/adminpage/admin-features/edit-feature/{Id:int}"
+@inject IFeatureService FeatureService
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+<h3>Edit Feature</h3>
+
+<EditForm Model="_featureToEdit" OnSubmit="@HandleSubmit" ref="CurrentEditContext">
+
+    <div class="form-group pb-4">
+        <label for="@_featureToEdit.Name">FeatureName</label>
+        <InputText class="form-control" @bind-Value="_featureToEdit.Name" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update</button>
+
+</EditForm>
+
+
+@if (exist)
+{
+    <div class="alert alert-danger mt-4" role="alert">Error: This Feature Exists</div>
+}
+
+@if (exception)
+{
+    <div class="alert alert-danger mt-4" role="alert">Error: Refresh the page and try one more time again</div>
+}
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    Feature _featureToEdit { get; set; } = new Feature();
+
+    bool exception = false;
+    bool exist = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _featureToEdit = await FeatureService.GetFeatureById(Id);
+    }
+
+    private async void HandleSubmit()
+    {
+        exception = false;
+        exist = false;
+        if (!FeatureService.FeatureExists(_featureToEdit.Name))
+        {
+            try
+            {
+                await FeatureService.UpdateFeature(_featureToEdit);
+                navManager.NavigateTo("/adminpage/admin-features/");
+            }
+            catch (Exception)
+            {
+                exception = true;
+            }
+
+        }
+        else
+        {
+            exist = true;
+        }
+    }
+}
